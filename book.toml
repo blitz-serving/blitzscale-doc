@@ -1,0 +1,5 @@
+[book]
+authors = ["zkx"]
+language = "en"
+src = "src"
+title = "blitzscale-doc"
