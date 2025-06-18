@@ -1,11 +1,14 @@
 # Summary
-
+- [Hardware Requirements](./hardware/hardware.md)
 - [Build](./build/build.md)
     - [4090](./build/4090.md)
-- [Hardware](./hardware/hardware.md)
 - [Architecture](./architecture/arch.md)
+- [Structure](./structure/stru.md)
+- [Glo Variables](./glo_variables/var.md)
 - [Components](./components/component.md)
     - [Router](./components/router.md)
+      - [Disaggregation(TODO)](./components/router/disaggregation.md)
+      - [Colocation(TODO)]
     - [Client](./components/client.md)
     - [Server](./components/server.md)
 - [Scripts](./scripts/script.md)
