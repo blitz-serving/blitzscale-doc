@@ -17,10 +17,11 @@
 5. replica_metric
 
 
-在循环中每次取出当前replica状态，根据状态执行不同的行为执行不同的处理逻辑
+在循环中每次取出当前replica状态，尝试接收Command并根据状态执行不同的行为执行不同的处理逻辑。没有接收到Command就直接使用当前状态
 #### inactive/loadingprefill/loadingdecode
 yield等待
 #### shuttingnull
+将guard从init_guard修改为dst_mutex(replias.mutex)
 yield等待
 #### decode
 循环从migration_queue中try_consume batch(tokens batch entries)并压入global_batch。如果没global_batch已经为空则yield释放，否则进行一次Decode
@@ -30,15 +31,37 @@ yield等待
 否则从queue中调用next_batch得到下一个prefill batch，增加使用的blocks计数，构造PrefillCase::Normal的prefillRequest，调用stub.prefill_v2得到prefill的Response，发送InferStreamResponse::PrefillDone & InferStreamReponse::Intermediate | InferStreamResponse::End,并判断client是否quit，如果由于client quit或Response::End则从entries中移除，并根据移除情况进行clear_cache / filter_batch
 由于是PD分离，将Prefill的结果构造为MigrationBatch，通过flow_watcher和migration_queue进行传递(batch entries tokens),交由Decode实例进行Decode阶段
 #### newprefill(TODO)
-用于ZigZag执行的前半段
+用于ZigZag执行的前半段，确保当前replica持有锁
+初始化zig_zag相关的时间戳并检查模型是否已经加载
+模型已加载则从pending_zag_prefill队列头部取出batch和前半段prefill的response，执行post_prefill_pre_decode。然后create_refact_head_task创建入RefactoryPrefill的任务，切换到RefactoryPrefill状态，进入下一轮循环
+如果当前replica使用的block已经超上限，则yield进入下一轮循环
+如果模型未加载，则从Relay_queue中尝试取出relay请求，向所有stub发送relay请求等待response。
+如果response中包含batch_id和seq_num，则循环从pending_zag_prefill中pop。如果pop出的prefill response start_layer为空则post_prefill_pre_decode，并修改model_loaded为true，否则break循环。此时已经得到start_layer非空的request，根据start_layer类型，transformerlayer部分迁移，向migration_queue append_partial_fst，之后通过sender通知OldPrefill(forwardcase为naivepp和immigrate)。embeddinglayer则直接迁移，同样sender通知OldPrefill(forwardcase为normal)并通知所有stub clear_cache
+如果response中不包含batch_id和seq_num,则重新判断model_loaded。如果model_loaded被置为true
+
+之后判断pending_zag_prefill的长度并yield控制zigzag速率
+从batching_queue中获取下一个batch并发起新的zigzagprefill，压入pending_zag_prefill队列等待后续处理
 #### refactoryprefill
+这个状态用于批量处理pending_zag_prefill队列中的任务，在relay_queue中检查relay请求，如果有则进入relay处理流程
+relay处理流程首先向所有stub调用relay操作(传入relay_rank)，如果response中包含了batch_id和seq_num，则说明有batch需要迁移，取出pending_zag_prefill中对应的future，等待完成之后判断response的start_layer，根据transformer和embedding进行NewPrefill中同样的处理。
+如果response不包含batch_id，说明迁移已经完成，统计pending_zag_prefill并进行异常检查，通过sender通知OldPrefill，等待refactory_head_task结束之后重置状态为Prefill
 #### oldprefill
 用于ZigZag执行的后半段
-#### mutatingtodecode
-#### auspreflil
-#### ausdecode
-#### shuttingdecode
+调用全局relay_queue的append，在这里通过async_channel_sender发送请求(indices: 当前所在PP rank)，等待收到PartialPrefill请求。
+收到partialprefill请求后调用prefill_v2并执行filter、send逻辑。
+如果请求的start_layer是TransformerLayer，则PartialMigration(append_partial_snd)，指定层级迁移部分kvcache；如果是EmbeddingLayer则append迁移整个batch的kvcache
+这两者的不同会在spawn_migration_queue中进行分别处理。
+如果在relay_queue中没有拿到partialprefill请求，则将状态切换为Prefill(TODO: why loop for current > 0)
+#### mutatingtodecode(TODO)
+#### auspreflil(TODO)
+#### ausdecode(TODO)
+#### shuttingdecode(TODO)
+decode状态切换到彻底关闭的清理状态，目的是完成所有剩余的decode任务。如果global_batches为空则切换到shuttingNull
+如果还没有持有锁，则尝试异步获取锁防止并发冲突(spawn出异步任务获取锁并赋值给guard)
+获取到锁之后不断从migration_queue中消费属于本副本的迁移batch
 #### shuttingprefill
+当unfinished_migration_count归零时切换到ShuttingNull，否则yield等待
+unfinished_migration_count会在向migration_queue中压入batch时increment
 #### sending/loading/casting
 panic
 ## 扩缩容
