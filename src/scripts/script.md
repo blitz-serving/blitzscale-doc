@@ -1,6 +1,9 @@
 # Scripts
 **batchv2是当前的使用脚本，batch目录中的脚本已经deprecated**
-
+示例命令如下(要根据需求修改toml配置)
+```bash
+python ./scripts/batchv2/main.py --templates ./config/e2e-blitz.toml
+```
 ***
 ## Args
 * templates 

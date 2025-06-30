@@ -1,4 +1,4 @@
 # Question-zkx
 
-1. relay_queue, queue, migrationQueue分别是什么作用
-2. 状态机状态图
+1. exec_blitz中的逻辑，包括扩缩容执行、如何充分利用网络硬件
+2. MigrationQueue中的fst snd是什么含义?

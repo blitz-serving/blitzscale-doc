@@ -1,13 +1,24 @@
 # Disaggregation
 ## 请求处理
 `start_disaggregation_event_loop`函数创建loop处理不同逻辑的Task
-## Main loops
-通过Tokio异步运行时Spawn出不同的loop进行请求处理、metrics监控等关键逻辑
+创建steersman记录每个replica的物理所在位置，spawn_migration_queue,并对每个replica spawn出disaggregation_event_loop_inner，负责向对应的replica发送batch请求。以及根据replica的状态进行请求的传递(zigzag/pd migration)。
+之后，创建DisaggregationController,进行reject_kv_cache_event_loop和report_system_metrics
+如果编译选项中不包含manually_scale选项，还会spawn出auto_scale_event_loop进行自动扩容
 ### auto_scale_event_loop
+在planner的replica_state_moniter_loop中
+循环generate_scale_target,并判断当前扩缩容feature，对于blitz使用exec_blitz中的扩缩容方案，sllm使用exec_serverless中的方案。
+exec_serverless直接向实例发送请求，从hostmem或者disk中加载参数
+而exec_blitz则使用RDMA p2p, NVLink p2p， NVLink broadcast或Tanz等方式进行扩容
 ### reject_kv_cache_event_loop
+动态检测并锁定某些decode副本，防止继续接收kvcache请求。
+遍历所有副本，并记录处于decode或Rdmasending状态副本的used_blocks。之后如果发现有decode使用的blocks高于平均值的两倍，则锁定该副本。
+实际执行上会与上次锁定的副本进行比较，只锁定新增的副本。如果没有其他副本被锁定则异步加锁，如果有其他副本被锁定
 ### report_network_flow
-### report_system_flow
+收集每个replica的flow_in和flow_out，构建flow_map用来打印日志
+### report_system_metrics
+遍历每个replica_metric，打印state，used_blocks以及是否加载模型等信息
 ### report_cur_waiting_prefill_tokens
+TODO: 当前deprecated
 ### disaggregation_event_loop_inner
 对于每个replica，创建出处理当前replica的event_loop。传入
 1. 用于同步的init_guard
@@ -17,7 +28,7 @@
 5. replica_metric
 
 
-在循环中每次取出当前replica状态，尝试接收Command并根据状态执行不同的行为执行不同的处理逻辑。没有接收到Command就直接使用当前状态
+在循环中每次取出当前replica状态，尝试接收Command并根据状态执行不同的处理逻辑。没有接收到Command就直接使用当前状态
 #### inactive/loadingprefill/loadingdecode
 yield等待
 #### shuttingnull
@@ -33,7 +44,7 @@ yield等待
 #### newprefill(TODO)
 用于ZigZag执行的前半段，确保当前replica持有锁
 初始化zig_zag相关的时间戳并检查模型是否已经加载
-模型已加载则从pending_zag_prefill队列头部取出batch和前半段prefill的response，执行post_prefill_pre_decode。然后create_refact_head_task创建入RefactoryPrefill的任务，切换到RefactoryPrefill状态，进入下一轮循环
+模型已加载则从pending_zag_prefill队列头部取出batch和前半段prefill的response，执行post_prefill_pre_decode。然后create_refact_head_task创建任务(循环从pending_zag_prefill请求中取出等待，并将将结果进行filter和send)，切换到RefactoryPrefill状态，进入下一轮循环
 如果当前replica使用的block已经超上限，则yield进入下一轮循环
 如果模型未加载，则从Relay_queue中尝试取出relay请求，向所有stub发送relay请求等待response。
 如果response中包含batch_id和seq_num，则循环从pending_zag_prefill中pop。如果pop出的prefill response start_layer为空则post_prefill_pre_decode，并修改model_loaded为true，否则break循环。此时已经得到start_layer非空的request，根据start_layer类型，transformerlayer部分迁移，向migration_queue append_partial_fst，之后通过sender通知OldPrefill(forwardcase为naivepp和immigrate)。embeddinglayer则直接迁移，同样sender通知OldPrefill(forwardcase为normal)并通知所有stub clear_cache
@@ -53,12 +64,14 @@ relay处理流程首先向所有stub调用relay操作(传入relay_rank)，如果
 这两者的不同会在spawn_migration_queue中进行分别处理。
 如果在relay_queue中没有拿到partialprefill请求，则将状态切换为Prefill(TODO: why loop for current > 0)
 #### mutatingtodecode(TODO)
+向Migration_queue发送Flush命令，将所有未迁移的batch一次性取出，放入global_entries和global_batches，供decode后续使用。
+之后状态切换未为Decode
 #### auspreflil(TODO)
 #### ausdecode(TODO)
 #### shuttingdecode(TODO)
 decode状态切换到彻底关闭的清理状态，目的是完成所有剩余的decode任务。如果global_batches为空则切换到shuttingNull
 如果还没有持有锁，则尝试异步获取锁防止并发冲突(spawn出异步任务获取锁并赋值给guard)
-获取到锁之后不断从migration_queue中消费属于本副本的迁移batch
+获取到锁之后不断从migration_queue中消费属于本副本的migration_queue,并循环从global_batches中取出request进行decode，同样对每轮生成filter_send_generations，直到global_batches被清空
 #### shuttingprefill
 当unfinished_migration_count归零时切换到ShuttingNull，否则yield等待
 unfinished_migration_count会在向migration_queue中压入batch时increment

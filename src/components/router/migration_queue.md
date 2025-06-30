@@ -1,0 +1,16 @@
+## migration_queue
+spawn出migration_queue_task
+接收MigrationCommand
+1. Produce: 插入waiting_full_batches
+2. ProducePartial: 插入waiting_partial_batches
+3. Flush: 清空全部的waiting_full_batches，并向请求者发送迁移走的全部batch
+
+* 如果没有正在进行的partial_migration,并且等待队列中还有partial_batches
+循环选择可用的目标replica，通过对dst_mutex尝试上锁，并且判断状态不为ShuttingNull。为了避免overflow，还需要保证dst_replica存在足够的block。这样就选中了可用的目标replica。添加使用的block并赋值doing_partial_migration，spawn出新的task传递partial_kvcache，传递结束时清理src的blocks。将这个task通过fst2snd_tx发送。
+如果没有fst2snd_tx，则直接spawn出线程执行partial_kv_cache的传递
+* 如果有正在进行的full_migration:
+* 如果没有正在进行的full_migraion,并且存在等待的full_batches:
+同样选择可用的目标replca，spawn出线程执行trans_kv_cache
+
+
+对于trans_kv_cache,通过向目标stub发送migrate和immigrate，传入要传递的batch和src_ranks,dst_ranks。trans_partial_kv_cache则只需要判断fst_layer或者snd_layer向stub发送immigrate_fst或immigrate_snd(migrate_fst, migrate_snd)
