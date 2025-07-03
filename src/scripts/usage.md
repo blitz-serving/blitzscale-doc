@@ -1,4 +1,5 @@
 # Usage
+当前脚本在python运行时，会首先通过mpi在inter-node/intra-node中启动多个server进程，之后运行router和client。client向router发送replay/mock/...的模拟请求，router在接收到请求之后会进行请求处理、自动扩缩容，并通过grpc向server发送request请求处理
 
 如果希望batchv2脚本修改client发送请求的逻辑，例如从dataset的replay切换到mock随机生成数据模式，需要修改runner.py里_dump_client_bash_script和launch_client中启动client的脚本命令，注释掉`--replay-mode`项，并将`--dataset-type`项修改为`mock`，以使用mock模式的client发送请求，无需提前准备数据集
 

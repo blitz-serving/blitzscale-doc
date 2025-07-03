@@ -2,7 +2,7 @@
 通过MPI多机/单机内启动之后，首先初始化MPI和CUDA设备，之后初始化用于处理grpc请求的Stub，初始化Tokenizer和gRPC serviceImpl，将service注册处理的stub并开始监听服务。监听之前注册sig_handler,接收到SIGINT等信号之后调用回调函数，通知poller线程终止server监听
 在Stub初始化时初始化相应的模型、CacheManager和MigrationManager、ModelLoader和Activation_manager、zigzag_manager并初始化NCCLBroadcastor
 ## Tccl
-在Server中，所有的网络发送(params,kv_cache)都通过TcclSend完成
+在Server中，网络传递params/kv_cache通过Tccl和nccl完成
 
 ## Model
 初始化flashinfer的handler，并分配weight_segment，runtime_segment，以及ragged_indptr_d等小的内存区域
@@ -18,11 +18,12 @@
 
 ## ActivationManager
 分配num_activation_slot * activation_slot_size_in_bytes大小的区域存放activation
-创建新的线程，循环等到被唤醒，进行
+创建新的线程，循环等到被唤醒，用于NaivePP或者Zigzag pp的activation传递
 
 ## ZigzagManager
 创建线程循环等待唤醒，并调度task进行执行。 执行时首先判断执行到的层数，如果未执行，则执行prologue，由embed层进行前向推理
 之后forward后续的层，如果执行了最后一层则执行epilogue从task_queue中移除。
+主循环event_loop_inner不断从队列中取出任务，推进transformer layer。sched_next_task获取下一个要处理的任务。如果是新任务，首先执行prologue中的embedding，否则判断当前执行到的层级，进入transformer层的推进。如果interrupt_residual传入了外部中断的请求则调用epilogue将任务relay给peer。否则在本地fwd_one_layer推进，任务完成时调用epilogue采样 手机结果。支持抢占，如果有新任务到来可以中断当前任务。
 
 ## NcclBcastor
 创建线程绑定nccl_bcastor_worker_inner任务

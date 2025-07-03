@@ -1,9 +1,9 @@
 # Disaggregation
 ## 请求处理
 `start_disaggregation_event_loop`函数创建loop处理不同逻辑的Task
-创建steersman记录每个replica的物理所在位置，spawn_migration_queue,并对每个replica spawn出disaggregation_event_loop_inner，负责向对应的replica发送batch请求。以及根据replica的状态进行请求的传递(zigzag/pd migration)。
-之后，创建DisaggregationController,进行reject_kv_cache_event_loop和report_system_metrics
-如果编译选项中不包含manually_scale选项，还会spawn出auto_scale_event_loop进行自动扩容
+创建steersman记录每个replica的物理所在位置，spawn_migration_queue,并对每个replica spawn出disaggregation_event_loop_inner，以状态机的实现方式，向对应的replica发送请求，以及根据replica的状态进行请求的传递(zigzag/pd migration)。
+之后，创建DisaggregationController,进行reject_kv_cache_event_loop(避免decode实例过载)和report_system_metrics
+不指定manually_scale编译选项时spawn出auto_scale_event_loop进行自动扩容()
 ### auto_scale_event_loop
 在planner的replica_state_moniter_loop中
 循环generate_scale_target,并判断当前扩缩容feature，对于blitz使用exec_blitz中的扩缩容方案，sllm使用exec_serverless中的方案。
@@ -12,7 +12,7 @@ exec_serverless直接向实例发送请求，从hostmem或者disk中加载参数
 ### reject_kv_cache_event_loop
 动态检测并锁定某些decode副本，防止继续接收kvcache请求。
 遍历所有副本，并记录处于decode或Rdmasending状态副本的used_blocks。之后如果发现有decode使用的blocks高于平均值的两倍，则锁定该副本。
-实际执行上会与上次锁定的副本进行比较，只锁定新增的副本。如果没有其他副本被锁定则异步加锁，如果有其他副本被锁定
+实际执行上会与上次锁定的副本进行比较，只锁定新增的副本。
 ### report_network_flow
 收集每个replica的flow_in和flow_out，构建flow_map用来打印日志
 ### report_system_metrics
@@ -20,7 +20,7 @@ exec_serverless直接向实例发送请求，从hostmem或者disk中加载参数
 ### report_cur_waiting_prefill_tokens
 TODO: 当前deprecated
 ### disaggregation_event_loop_inner
-对于每个replica，创建出处理当前replica的event_loop。传入
+核心循环，以状态机的方式实现对不同replica状态的逻辑，包括batch发送，请求migration等逻辑。对于每个replica，都创建出处理当前replica的event_loop。传入参数如下
 1. 用于同步的init_guard
 2. 状态切换命令的ReplicaCommand Channel
 3. queue
@@ -32,11 +32,11 @@ TODO: 当前deprecated
 #### inactive/loadingprefill/loadingdecode
 yield等待
 #### shuttingnull
-将guard从init_guard修改为dst_mutex(replias.mutex)
+将当前replica上锁，避免被其他进程操作。
 yield等待
 #### decode
-循环从migration_queue中try_consume batch(tokens batch entries)并压入global_batch。如果没global_batch已经为空则yield释放，否则进行一次Decode
-包括对系统metric进行设置，将batch和last_token通过stub发送给后端(decode_v2)，将generations进行top_tokens取样后通过stream sender发送。如果是最后一个token返回InferStreamResponse::End,否则返回InferStreamResponse::Intermediate，接收者会进行不同的处理。当前loop会在请求生成最后一个token时从entries中移除该请求。之后将结束的请求clear_cache,未结束的请求filter_batch并重新放入global_batch，进行下一轮处理
+循环从migration_queue中try_consume batch(tokens batch entries)并压入global_batch。如果global_batch已经为空则yield释放，否则进行一次Decode
+包括对系统metric进行设置，将batch和last_token通过stub发送给后端(decode_v2)，将generations通过stream sender发送给等待向流式请求返回响应的线程。如果是最后一个token返回InferStreamResponse::End,否则返回InferStreamResponse::Intermediate，接收者会进行不同的处理。当前loop会在请求生成最后一个token时从entries中移除该请求。之后将结束的请求向server发送clear_cache,未结束的请求发送filter_batch并重新放入global_batch，进行下一轮处理
 #### prefill
 如果当前需求的block已经大于每个replica最大的block数，则yield
 否则从queue中调用next_batch得到下一个prefill batch，增加使用的blocks计数，构造PrefillCase::Normal的prefillRequest，调用stub.prefill_v2得到prefill的Response，发送InferStreamResponse::PrefillDone & InferStreamReponse::Intermediate | InferStreamResponse::End,并判断client是否quit，如果由于client quit或Response::End则从entries中移除，并根据移除情况进行clear_cache / filter_batch
@@ -64,13 +64,15 @@ relay处理流程首先向所有stub调用relay操作(传入relay_rank)，如果
 这两者的不同会在spawn_migration_queue中进行分别处理。
 如果在relay_queue中没有拿到partialprefill请求，则将状态切换为Prefill(TODO: why loop for current > 0)
 #### mutatingtodecode(TODO)
-向Migration_queue发送Flush命令，将所有未迁移的batch一次性取出，放入global_entries和global_batches，供decode后续使用。
-之后状态切换未为Decode
+向Migration_queue发送Flush命令，将所有属于当前replica未迁移的batch一次性取出，放入global_entries和global_batches，供decode后续使用。
+之后状态切换为Decode
 #### auspreflil(TODO)
+持锁之后转变为prefill
 #### ausdecode(TODO)
+持锁之后转变为decode
 #### shuttingdecode(TODO)
-decode状态切换到彻底关闭的清理状态，目的是完成所有剩余的decode任务。如果global_batches为空则切换到shuttingNull
-如果还没有持有锁，则尝试异步获取锁防止并发冲突(spawn出异步任务获取锁并赋值给guard)
+decode状态切换到彻底关闭的清理状态，目的是完成所有剩余的decode任务。如果global_batches为空并且持有锁则切换到shuttingNull
+如果还没有持有锁，则尝试异步获取锁防止并发冲突(或yield等待join_handle结束持锁)
 获取到锁之后不断从migration_queue中消费属于本副本的migration_queue,并循环从global_batches中取出request进行decode，同样对每轮生成filter_send_generations，直到global_batches被清空
 #### shuttingprefill
 当unfinished_migration_count归零时切换到ShuttingNull，否则yield等待
