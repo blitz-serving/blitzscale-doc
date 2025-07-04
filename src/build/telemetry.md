@@ -1,4 +1,12 @@
-## Telemetry
+## Telemetry(alpha)
+在router中暴露/metrics端口，使用prometheus + grafana的方案作为telemetry，以实现可观测性
+### install
+通过bin安装prometheus与grafana
+```bash
+https://prometheus.io/docs/prometheus/latest/getting_started/
+https://grafana.com/docs/grafana/latest/setup-grafana/start-restart-grafana/
+```
+### config
 修改prometheus中的yml，从而更改拉取的时间间隔
 
 ```yml
@@ -16,6 +24,7 @@ scrape_configs:
 
 ```
 
+### run
 ```bash
 ./prometheus --config.file=prometheus.yml
 ```
@@ -23,4 +32,4 @@ scrape_configs:
 ```bash
 ./bin/grafana server
 ```
-在grafana 3000端口grafana dashboard进行面板的修改、查看。后续附上重要metrics的dashboard
+在grafana 3000端口grafana dashboard进行面板的修改、查看。后续附上重要metrics dashboard的yml配置

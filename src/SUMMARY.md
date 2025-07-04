@@ -1,7 +1,7 @@
 # Summary
 - [Overview](./overview.md)
 - [Build](./build/build.md)
-    - [telemetry](./build/telemetry.md)
+    - [Telemetry(alpha)](./build/telemetry.md)
 - [Architecture](./architecture/arch.md)
 - [Structure](./structure/stru.md)
 - [Components](./components/component.md)
