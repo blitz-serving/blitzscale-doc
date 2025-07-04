@@ -1,8 +1,6 @@
 # Summary
 - [Overview](./overview.md)
 - [Build](./build/build.md)
-    - [4090](./build/4090.md)
-    - [h100](./build/h100.md)
     - [telemetry](./build/telemetry.md)
 - [Architecture](./architecture/arch.md)
 - [Structure](./structure/stru.md)
