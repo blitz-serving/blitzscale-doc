@@ -6,3 +6,4 @@ title = "blitzscale-doc"
 
 [output.html]
 git-repository-url = "https://github.com/blitz-serving/blitzscale-doc"
+site-url="/${{repo-name}}/"

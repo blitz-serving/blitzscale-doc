@@ -1,0 +1,366 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>4090 - blitzscale-doc</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">blitzscale-doc</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/blitz-serving/blitzscale-doc" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="4090"><a class="header" href="#4090">4090</a></h1>
+<h2 id="创建docker容器"><a class="header" href="#创建docker容器">创建docker容器</a></h2>
+<p>使用docker进行构建，将gpu以及网卡设备都添加到容器中，并且使用host网络模式，以便进行多节点间通信</p>
+<pre><code class="language-bash">docker run -itd \
+    --privileged \
+    --gpus all \
+    --ipc host \
+    --network host \
+    --volume /data2:/nvme \
+    --device /dev/infiniband/rdma_cm \
+    --device /dev/infiniband/uverbs0 \
+    --workdir /root \
+    --name blitz-docker \
+    nvcr.io/nvidia/pytorch:24.06-py3 /bin/bash
+</code></pre>
+<h2 id="添加环境变量"><a class="header" href="#添加环境变量">添加环境变量</a></h2>
+<p>添加cmake/bin环境变量</p>
+<pre><code class="language-bash">echo 'export CMAKE_PREFIX_PATH=/root/.local' &gt;&gt; /root/.bashrc
+echo 'export PATH=/root/.local/bin:$PATH' &gt;&gt; /root/.bashrc
+source /root/.bashrc
+</code></pre>
+<h2 id="构建grpc依赖"><a class="header" href="#构建grpc依赖">构建grpc依赖</a></h2>
+<p>clone grpc的代码,并添加到指定目录</p>
+<pre><code class="language-bash">git clone git@github.com:grpc/grpc.git
+
+git checkout tags/v1.66.0
+git submodule update --init --recursive
+
+cd grpc
+mkdir -p cmake/build &amp;&amp; \
+cd cmake/build
+cmake \
+    -DgRPC_BUILD_TESTS=OFF \
+    -DgRPC_INSTALL=ON \
+    -DCMAKE_INSTALL_PREFIX=/root/.local \
+    ../..
+make -j64
+make install
+</code></pre>
+<h2 id="安装所需依赖"><a class="header" href="#安装所需依赖">安装所需依赖</a></h2>
+<pre><code class="language-bash">apt update &amp;&amp; \
+apt install git vim wget curl autoconf pkg-config libssl-dev -y &amp;&amp; \
+apt reinstall libibverbs-dev
+</code></pre>
+<h2 id="安装rust"><a class="header" href="#安装rust">安装rust</a></h2>
+<pre><code class="language-bash">curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+source "/root/.cargo/env"
+</code></pre>
+<h2 id="clone-blitzscale仓库"><a class="header" href="#clone-blitzscale仓库">clone blitzscale仓库</a></h2>
+<pre><code class="language-bash">git clone git@github.com:blitz-serving/blitz-remake.git
+git submodule update --init --recursive
+
+</code></pre>
+<h2 id="构建blitz-scale"><a class="header" href="#构建blitz-scale">构建blitz-scale</a></h2>
+<p>在这里需要根据GPU架构切换TORCH_CUDA_ARCH_LIST版本和CMAKE_CUDA_ARCHITECTURES、FLASHINFER_CUDA_ARCHITECTURES，例如H卡需要修改为'9.0', 90, 90</p>
+<pre><code class="language-bash">cmake -Bbuild/release \
+-DTorch_DIR=/usr/local/lib/python3.10/dist-packages/torch \
+-DBUILD_MODE=debug \
+-DCMAKE_CUDA_ARCHITECTURES=80 \
+-DFLASHINFER_CUDA_ARCHITECTURES=80 \
+-DTORCH_CUDA_ARCH_LIST='8.0' \
+-DFLASHINFER_ENABLE_FP8=false \
+-DFLASHINFER_GEN_HEAD_DIMS=128 \
+-DFLASHINFER_GEN_MASK_MODES=1 \
+-DFLASHINFER_GEN_POS_ENCODING_MODES=1 
+
+
+cmake -Bbuild/release \
+-DTorch_DIR=/usr/local/lib/python3.10/dist-packages/torch \
+-DBUILD_MODE=debug \
+-DCMAKE_CUDA_ARCHITECTURES=90 \
+-DFLASHINFER_CUDA_ARCHITECTURES=90 \
+-DTORCH_CUDA_ARCH_LIST='9.0' \
+-DFLASHINFER_ENABLE_FP8=false \
+-DFLASHINFER_GEN_HEAD_DIMS=128 \
+-DFLASHINFER_GEN_MASK_MODES=1 \
+-DFLASHINFER_GEN_POS_ENCODING_MODES=1 
+
+# 若提示CMAKE_CUDA_COMPILER并未找到，则使用如下的cmake命令
+# cmake -Bbuild/release \
+#   -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc \
+#   -DTorch_DIR=/usr/local/lib/python3.10/dist-packages/torch \
+#   -DBUILD_MODE=debug \
+#   -DCMAKE_CUDA_ARCHITECTURES=80 \
+#   -DFLASHINFER_CUDA_ARCHITECTURES=80 \
+#   -DTORCH_CUDA_ARCH_LIST='8.0' \
+#   -DFLASHINFER_ENABLE_FP8=false \
+#   -DFLASHINFER_GEN_HEAD_DIMS=128 \
+#   -DFLASHINFER_GEN_MASK_MODES=1 \
+#   -DFLASHINFER_GEN_POS_ENCODING_MODES=1
+
+cmake --build build/release -j 64
+</code></pre>
+<h2 id="test"><a class="header" href="#test">test</a></h2>
+<pre><code class="language-bash"># 通过test_model_llama测试CUDA能够正常使用
+./build/bin/test_model_llama
+</code></pre>
+<h2 id="usage"><a class="header" href="#usage">usage</a></h2>
+<p>启动server和router之后，向router发送推理请求，接口兼容openai</p>
+<h2 id="mpi"><a class="header" href="#mpi">mpi</a></h2>
+<pre><code class="language-bash"># 下载资源
+wget https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-4.1.7.tar.gz
+
+# 解压缩
+tar -xzvf ./openmpi-4.1.7.tar.gz
+
+# 配置
+./configure
+
+# 编译 安装
+make -j 64
+make install
+
+
+export OPAL_PREFIX=/opt/hpcx/ompi
+export PATH=/opt/hpcx/ompi/bin:$PATH
+export LD_LIBRARY_PATH=/opt/hpcx/ompi/lib:/opt/hpcx/ucx/lib:/opt/hpcx/ucc/lib:/opt/hpcx/sharp/lib:/opt/hpcx/hcoll/lib:$LD_LIBRARY_PATH
+</code></pre>
+<h2 id="python"><a class="header" href="#python">python</a></h2>
+<pre><code class="language-bash">pip install toml
+</code></pre>
+<h2 id="nccl"><a class="header" href="#nccl">nccl</a></h2>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../build/build.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../build/h100.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../build/build.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../build/h100.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>
