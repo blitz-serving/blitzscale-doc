@@ -1,12 +1,11 @@
 # Summary
-- [Hardware Requirements](./hardware/hardware.md)
+- [Overview](./overview.md)
 - [Build](./build/build.md)
     - [4090](./build/4090.md)
     - [h100](./build/h100.md)
     - [telemetry](./build/telemetry.md)
 - [Architecture](./architecture/arch.md)
 - [Structure](./structure/stru.md)
-- [Glo Variables](./glo_variables/var.md)
 - [Components](./components/component.md)
     - [Router](./components/router.md)
       - [Disaggregation](./components/router/disaggregation.md)
@@ -31,4 +30,4 @@
 
 ---
 
-[Acknowledgement](./acknowledgement/ack.md)
+- [Acknowledgement](./acknowledgement/ack.md)

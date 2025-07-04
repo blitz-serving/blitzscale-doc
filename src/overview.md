@@ -1,0 +1,2 @@
+# Overview
+Blitzscale充分利用了网络硬件(RDMA、NVLink)进行快速扩缩容，并通过zigzag prefill在扩容时通过类似PP的方式充分利用正在加载的replica算力，实现对在线服务突发负载下的scale up/scale out，以避免SLO violation的发生。

@@ -21,7 +21,7 @@
       - mod: exec_blitz中执行参数发送的方法实现
       - planner: 循环监控系统状态，并生成扩缩容计划
     - steersman: 存储模型信息、replica与物理拓扑的映射等
-- src: 算子执行后端，在这里发送CUDA kernel给GPU进行模型执行，并且通过GPU Direct RDMA进行模型参数传递
+- src: 模型执行后端，在这里发送CUDA kernel给GPU进行模型执行，并且通过RDMA、Tanz、NVLink进行模型参数传递
   - server: main函数所在的目录，初始化stub、service并启动grpc server
   - service: grpc service实现的位置，实现向外暴露的grpc端点服务
   - model: 抽象整个模型
