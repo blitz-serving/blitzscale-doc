@@ -1,4 +1,4 @@
-## planner
+## planner(TODO)
 由create_disaggregate_inner创建的循环
 在这里记录rdma和nvl的状态
 
@@ -6,3 +6,5 @@
 
 view_replica_state遍历所有replica_state，收集每个replica的metric。
 LoadingDecode AusDeocde和MutatingToDecode统一记录为decode replica,而Prefill AusPrefill NewPrefill OldPrefill RefactoryPrefill和LoadingPrefill都记录为prefill replica
+
+### generate_scale_target(TODO)
